@@ -1,62 +1,306 @@
-import { type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import {
-  Route,
-  Switch,
-  useLocation,
-  Router as WouterRouter,
-} from 'wouter';
+import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter';
+import { ArrowDownRight, ArrowLeft, ArrowRight, BarChart3, BookOpen, Check, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Cloud, CloudCog, Compass, ExternalLink, Flame, Globe2, GraduationCap, Layers3, Lightbulb, ListChecks, Menu, MessageCircle, RotateCcw, Send, ShieldCheck, Sparkles, Target, X } from 'lucide-react';
+import { makeLessonQuestion, modules, questions, type Lesson, type Module } from './content';
 
 const queryClient = new QueryClient();
+type ChatMessage = { role: 'user' | 'assistant'; text: string; time: string };
+const store = {
+  read<T>(key: string, fallback: T): T {
+    try { const raw = localStorage.getItem(`wingu-${key}`); return raw ? JSON.parse(raw) as T : fallback; } catch { return fallback; }
+  },
+  write(key: string, value: unknown) { try { localStorage.setItem(`wingu-${key}`, JSON.stringify(value)); } catch { /* browser storage can be unavailable */ } }
+};
+const navItems = [{ href:'/', label:'Home', icon:Compass }, { href:'/learn', label:'Learn', icon:BookOpen }, { href:'/buddy', label:'Study Buddy', icon:MessageCircle }, { href:'/quiz', label:'Quiz', icon:ListChecks }, { href:'/progress', label:'My progress', icon:BarChart3 }, { href:'/about', label:'About', icon:CircleHelp }];
+const totalTopics = modules.reduce((sum, module) => sum + module.lessons.length, 0);
 
-function Home() {
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Replit Agent is building...
-        </h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Your app will appear here once it's ready.
-        </p>
+function useStudyData() {
+  const [completed, setCompleted] = useState<string[]>(() => store.read('completed', []));
+  const [history, setHistory] = useState<{ date:string; score:number; total:number; mode:string }[]>(() => store.read('history', []));
+  const [goal, setGoal] = useState<number>(() => store.read('goal', 1));
+  const [chat, setChat] = useState<ChatMessage[]>(() => store.read('chat', []));
+  const [checklist, setChecklist] = useState<string[]>(() => store.read('checklist', []));
+  useEffect(() => store.write('completed', completed), [completed]);
+  useEffect(() => store.write('history', history), [history]);
+  useEffect(() => store.write('goal', goal), [goal]);
+  useEffect(() => store.write('chat', chat), [chat]);
+  useEffect(() => store.write('checklist', checklist), [checklist]);
+  return { completed, setCompleted, history, setHistory, goal, setGoal, chat, setChat, checklist, setChecklist };
+}
+
+function AppShell({ children, style, setStyle }: { children: React.ReactNode; style:string; setStyle:(value:string)=>void }) {
+  const [location] = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => setMenuOpen(false), [location]);
+  function changeStyle(value: string) { setStyle(value); store.write('learning-style', value); }
+  return <div className="app-shell">
+    <header className="site-header sticky top-0 z-40">
+      <div className="mx-auto flex h-[74px] max-w-7xl items-center justify-between px-5 lg:px-8">
+        <Link href="/" className="flex items-center gap-3" data-testid="link-brand-home">
+          <span className="brand-mark flex h-10 w-10 items-center justify-center rounded-[14px]"><Cloud size={22} strokeWidth={2.5}/></span>
+          <span className="leading-tight"><span className="block font-[Manrope] text-[17px] font-extrabold tracking-[-.04em] text-slate-900">Wingu<span className="text-teal-700">Study</span></span><span className="block text-[10px] font-semibold uppercase tracking-[.16em] text-slate-500">AZURE, MADE HUMAN</span></span>
+        </Link>
+        <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation" data-testid="nav-main">
+          {navItems.map(item => <Link key={item.href} href={item.href} data-testid={`link-nav-${item.label.toLowerCase().replaceAll(' ','-')}`} className={`rounded-full px-3.5 py-2 text-[13px] font-semibold transition-colors ${location === item.href ? 'bg-teal-50 text-teal-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>{item.label}</Link>)}
+        </nav>
+        <div className="hidden items-center gap-2 lg:flex">
+          <Globe2 size={15} className="text-teal-800"/>
+          <select aria-label="Learning style" data-testid="select-learning-style" value={style} onChange={e => changeStyle(e.target.value)} className="max-w-[154px] rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-teal-600">
+             <option>Simple English</option><option>English with African examples</option><option>Swahili explanations</option>
+          </select>
+        </div>
+        <button aria-label={menuOpen ? 'Close menu' : 'Open menu'} data-testid="button-mobile-menu" onClick={() => setMenuOpen(v => !v)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 md:hidden">{menuOpen ? <X size={19}/> : <Menu size={20}/>}</button>
       </div>
+      {menuOpen && <div className="border-t border-slate-200 bg-[#f8fcfb] px-5 py-4 md:hidden">
+        <nav className="grid grid-cols-2 gap-2" aria-label="Mobile navigation" data-testid="nav-mobile">{navItems.map(item => <Link key={item.href} href={item.href} data-testid={`link-mobile-${item.label.toLowerCase().replaceAll(' ','-')}`} className={`flex items-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold ${location === item.href ? 'bg-teal-100 text-teal-900' : 'text-slate-700 hover:bg-slate-100'}`}><item.icon size={16}/>{item.label}</Link>)}</nav>
+         <label className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-600">Learning style <select aria-label="Learning style" data-testid="select-mobile-learning-style" value={style} onChange={e => changeStyle(e.target.value)} className="ml-auto rounded-lg border border-slate-200 bg-white px-2 py-2"><option>Simple English</option><option>English with African examples</option><option>Swahili explanations</option></select></label>
+      </div>}
+    </header>
+    <main>{children}</main>
+    <footer className="mt-20 border-t border-[#d9e7e7] bg-[#eaf3f2]">
+      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 md:flex-row md:items-center md:justify-between lg:px-8">
+        <div className="flex items-center gap-3"><span className="brand-mark flex h-9 w-9 items-center justify-center rounded-xl"><Cloud size={18}/></span><span className="text-sm font-extrabold text-slate-800">WinguStudy AI</span></div>
+         <p data-testid="text-affiliation-disclaimer" className="max-w-2xl text-xs leading-relaxed text-slate-600">WinguStudy AI is an independent educational project created to support Azure Fundamentals learning. It is not affiliated with, endorsed by, or sponsored by Microsoft. Azure and related product names are trademarks of their respective owners. Learning content is based on publicly available Microsoft Learn materials and original educational explanations.</p>
+        <p className="text-xs font-medium text-slate-500">Your learning stays on this device.</p>
+      </div>
+    </footer>
+  </div>;
+}
+
+function ButtonLink({ href, children, secondary = false, testId }: { href:string; children:React.ReactNode; secondary?:boolean; testId:string }) {
+  return <Link href={href} data-testid={testId} className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-all hover:-translate-y-0.5 ${secondary ? 'border border-white/35 bg-white/10 text-white hover:bg-white/20' : 'bg-[#f3bc63] text-[#153a48] shadow-md shadow-slate-950/10 hover:bg-[#ffce7c]'}`}>{children}</Link>;
+}
+function Eyebrow({ children }: { children:React.ReactNode }) { return <span className="mb-3 inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[.17em] text-teal-800">{children}</span>; }
+
+function Home({ completed }: { completed:string[] }) {
+  return <div className="page-enter">
+    <section className="mx-auto max-w-7xl px-5 pt-7 lg:px-8">
+      <div className="hero-panel min-h-[490px] rounded-[30px] px-7 py-12 text-white sm:px-12 lg:flex lg:items-center lg:px-[5.5rem]">
+        <div className="hero-orbit" aria-hidden="true"></div>
+        <div className="relative z-10 max-w-[610px]">
+          <Eyebrow><span className="h-2 w-2 rounded-full bg-[#f3bc63]"></span> YOUR CLOUD JOURNEY STARTS HERE</Eyebrow>
+          <h1 data-testid="text-home-headline" className="max-w-[620px] text-[clamp(2.65rem,6vw,5.1rem)] font-extrabold leading-[1.02] tracking-[-.06em]">Cloud Computing,<br/><span className="text-[#a5e4da]">Made Simple.</span></h1>
+          <p data-testid="text-home-intro" className="mt-6 max-w-[525px] text-base leading-7 text-white/85 sm:text-lg">Your AI-powered Azure study buddy. Learn cloud concepts through simple explanations, familiar African examples, and interactive practice.</p>
+          <p className="mt-3 text-sm font-medium text-white/65">A warm, jargon-light start to your AZ-900 learning journey.</p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row"><ButtonLink href="/learn" testId="button-start-learning">Start Learning <ArrowRight size={17}/></ButtonLink><ButtonLink href="/buddy" secondary testId="button-ask-buddy">Ask the AI Study Buddy <MessageCircle size={17}/></ButtonLink></div>
+        </div>
+        <div className="relative z-10 mt-10 hidden flex-1 items-center justify-center lg:flex" aria-label="Cloud learning illustration" data-testid="illustration-cloud-learning">
+          <div className="relative flex h-[295px] w-[295px] items-center justify-center rounded-full border border-white/20 bg-white/[.07]">
+            <div className="absolute h-[215px] w-[215px] rounded-full border border-dashed border-white/30"></div>
+            <div className="hero-cloud relative flex h-36 w-44 items-center justify-center rounded-[46%] bg-[#effcfa] text-[#08677d] before:absolute before:-top-7 before:left-7 before:h-20 before:w-20 before:rounded-full before:bg-[#effcfa] after:absolute after:-top-12 after:right-7 after:h-28 after:w-28 after:rounded-full after:bg-[#effcfa]"><CloudCog className="relative z-10" size={62} strokeWidth={1.6}/></div>
+            <span className="absolute left-4 top-12 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f3bc63] text-[#173847] shadow-lg"><BookOpen size={21}/></span>
+            <span className="absolute bottom-7 left-9 flex h-10 w-10 items-center justify-center rounded-full bg-[#8fd5cb] text-[#084953]"><Check size={19}/></span>
+            <span className="absolute right-4 top-14 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-teal-800 shadow-lg"><Lightbulb size={23}/></span>
+            <span className="absolute bottom-8 right-6 flex h-10 w-10 items-center justify-center rounded-full bg-[#e7f1f7] text-[#155f7a]"><Target size={18}/></span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
+      <div className="grid gap-8 lg:grid-cols-[1.04fr_.96fr] lg:items-center">
+        <div><Eyebrow><Sparkles size={15}/> A FRIENDLY PLACE TO BEGIN</Eyebrow><h2 className="max-w-xl text-3xl font-extrabold leading-tight text-slate-900 sm:text-4xl">Big cloud ideas, explained like a conversation.</h2><p className="mt-4 max-w-xl leading-7 text-slate-600">No experience required. Take one small topic at a time, connect it to something familiar, and build confidence as you go.</p>
+          <div className="mt-7 space-y-4">{[['Learn at your pace','Short lessons, clear takeaways, no pressure.'],['Connect the dots','African examples make abstract ideas feel real.'],['Practise with purpose','Try original questions and learn from every answer.']].map(([title,desc],i)=><div key={title} className="flex gap-4"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-800">{i===0?<BookOpen size={17}/>:i===1?<Globe2 size={17}/>:<CheckCircle2 size={17}/>}</span><div><h3 className="font-bold text-slate-800">{title}</h3><p className="mt-0.5 text-sm text-slate-600">{desc}</p></div></div>)}</div>
+        </div>
+        <div className="soft-card rounded-[26px] border border-[#dce9e9] bg-white p-7 sm:p-9">
+          <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-slate-500">Your starting point</p><h3 className="mt-2 text-2xl font-extrabold text-slate-900">Three clear steps</h3></div><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e8f5f3] text-teal-800"><GraduationCap size={24}/></div></div>
+          <div className="mt-7 space-y-3">{modules.map((module,i)=><Link href="/learn" data-testid={`link-home-module-${module.id}`} key={module.id} className="group flex items-center gap-4 rounded-2xl border border-slate-100 p-4 transition-colors hover:border-teal-200 hover:bg-[#f7fbfa]"><span className={`flex h-10 w-10 items-center justify-center rounded-xl font-extrabold ${i===0?'bg-[#e7f2fb] text-[#27739b]':i===1?'bg-[#e3f4ef] text-[#20785f]':'bg-[#fff2dc] text-[#936528]'}`}>0{i+1}</span><span className="min-w-0 flex-1"><span className="block font-bold text-slate-800">{module.title}</span><span className="mt-1 block text-xs text-slate-500">{module.lessons.length} bite-sized topics · {completed.filter(id=>module.lessons.some(l=>l.id===id)).length} completed</span></span><ArrowRight size={17} className="text-slate-400 transition-transform group-hover:translate-x-1"/></Link>)}</div>
+        </div>
+      </div>
+    </section>
+    <section className="mx-auto max-w-7xl px-5 pb-4 lg:px-8"><div className="grid gap-4 rounded-[26px] bg-[#e3f1ef] p-6 sm:grid-cols-[1fr_auto] sm:items-center sm:p-9"><div><Eyebrow><MessageCircle size={15}/> NEED A QUICK EXPLANATION?</Eyebrow><h2 className="text-2xl font-extrabold text-slate-900">Ask without worrying about “silly” questions.</h2><p className="mt-2 text-sm text-slate-600">Study Buddy is in clearly marked demo mode, with helpful preset learning responses.</p></div><ButtonLink href="/buddy" testId="button-home-chat">Meet Study Buddy <ArrowRight size={16}/></ButtonLink></div></section>
+    <section className="mx-auto max-w-7xl px-5 pt-5 lg:px-8"><div className="grid gap-4 md:grid-cols-2"><div className="rounded-[24px] border border-[#dbe7e7] bg-white p-6"><Eyebrow><Globe2 size={15}/> LEARN THROUGH LOCAL CONTEXT</Eyebrow><h2 className="text-2xl font-extrabold text-slate-900">Cloud ideas, close to home.</h2><p className="mt-3 text-sm leading-6 text-slate-600">Explore examples from Kenyan schools, clinics, farms, shops, mobile money, transport, and community projects. The analogy helps you start; each lesson also explains the actual Azure concept.</p></div><div className="rounded-[24px] border border-[#dbe7e7] bg-white p-6"><Eyebrow><Target size={15}/> BUILD A STEADY STUDY RHYTHM</Eyebrow><h2 className="text-2xl font-extrabold text-slate-900">Practise, reflect, continue.</h2><p className="mt-3 text-sm leading-6 text-slate-600">Try original questions, review explanations, and follow your topic progress in this browser. Your study history stays on this device without an account.</p><ButtonLink href="/quiz" testId="button-home-practice">Try a practice quiz <ArrowRight size={16}/></ButtonLink></div></div></section>
+  </div>;
+}
+
+function Learn({ completed, setCompleted, style }: { completed:string[]; setCompleted:(v:string[])=>void; style:string }) {
+  const [active, setActive] = useState<string | null>(null);
+  const [filter, setFilter] = useState('all');
+  const filtered = filter === 'all' ? modules : modules.filter(m => m.id === filter);
+  function toggleDone(id:string) { setCompleted(completed.includes(id) ? completed.filter(x=>x!==id) : [...completed,id]); }
+  return <div className="page-enter mx-auto max-w-7xl px-5 pt-10 lg:px-8">
+    <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><Eyebrow><BookOpen size={15}/> YOUR LEARNING PATH</Eyebrow><h1 data-testid="text-learn-title" className="text-4xl font-extrabold text-slate-900 sm:text-5xl">Learn the cloud, one idea at a time.</h1><p className="mt-3 max-w-2xl text-slate-600">Three modules, built around the AZ-900 fundamentals. Open any topic to explore a simple explanation, a familiar example, and a quick recap.</p></div><div className="flex w-fit items-center gap-3 rounded-2xl border border-[#d9e8e7] bg-white px-4 py-3"><span className="text-2xl font-extrabold text-teal-800">{completed.length}<span className="text-sm font-semibold text-slate-400">/{totalTopics}</span></span><span className="text-xs font-semibold leading-4 text-slate-600">topics<br/>completed</span></div></div>
+    {style==='Swahili explanations'&&<div className="mt-5 flex flex-col justify-between gap-3 rounded-2xl border border-[#d9e8e7] bg-[#eaf5f2] p-4 sm:flex-row sm:items-center"><p className="text-sm leading-6 text-slate-700">Kiswahili selected. Open Study Buddy for a simple Swahili explanation of a cloud topic.</p><Link href="/buddy" data-testid="link-swahili-study-buddy" className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-teal-900">Ask Study Buddy <ArrowRight size={15}/></Link></div>}
+    <div className="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Filter learning modules" data-testid="tabs-module-filter">{[{id:'all',title:'All modules'},...modules].map(m=><button key={m.id} role="tab" aria-selected={filter===m.id} data-testid={`button-filter-${m.id}`} onClick={()=>setFilter(m.id)} className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${filter===m.id?'bg-[#0a657a] text-white':'border border-slate-200 bg-white text-slate-600 hover:border-teal-300'}`}>{m.title}</button>)}</div>
+    <div className="mt-6 space-y-6">{filtered.map((module,mi)=><ModuleCard key={module.id} module={module} index={modules.indexOf(module)} completed={completed} active={active} setActive={setActive} toggleDone={toggleDone}/>)}</div>
+    <div className="mt-8 flex flex-col justify-between gap-4 rounded-2xl border border-teal-100 bg-[#e8f5f2] p-5 sm:flex-row sm:items-center"><div><p className="font-bold text-slate-800">Ready to check what stuck?</p><p className="mt-1 text-sm text-slate-600">Choose a topic or mix it up with a quick practice quiz.</p></div><ButtonLink href="/quiz" testId="button-learn-quiz">Go to practice <ArrowRight size={16}/></ButtonLink></div>
+  </div>;
+}
+
+function ModuleCard({ module, index, completed, active, setActive, toggleDone }: { module:Module; index:number; completed:string[]; active:string|null; setActive:(id:string|null)=>void; toggleDone:(id:string)=>void }) {
+  const doneCount=module.lessons.filter(l=>completed.includes(l.id)).length;
+  return <section className="soft-card overflow-hidden rounded-[24px] border border-[#dbe7e7] bg-white" data-testid={`section-module-${module.id}`}>
+    <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:p-7">
+      <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] font-[Manrope] text-xl font-extrabold ${index===0?'bg-[#e8f2fb] text-[#27739b]':index===1?'bg-[#e5f4ef] text-[#237861]':'bg-[#fff1d9] text-[#996a26]'}`}>0{index+1}</span>
+      <div className="min-w-0 flex-1"><p className="text-xs font-bold uppercase tracking-widest text-slate-500">MODULE 0{index+1}</p><h2 className="mt-1 text-xl font-extrabold text-slate-900 sm:text-2xl">{module.title}</h2><p className="mt-1 text-sm text-slate-600">{module.subtitle}</p></div>
+      <div className="min-w-[120px]"><div className="mb-2 flex justify-between text-[11px] font-bold text-slate-500"><span>{doneCount} of {module.lessons.length}</span><span>{Math.round(doneCount/module.lessons.length*100)}%</span></div><div className="progress-track h-2 overflow-hidden rounded-full"><div className="h-full rounded-full bg-teal-600 transition-all" style={{width:`${doneCount/module.lessons.length*100}%`}}/></div></div>
     </div>
-  );
+    <div className="divide-y divide-slate-100">{module.lessons.map((lesson,i)=><div key={lesson.id} data-testid={`topic-row-${lesson.id}`}>
+      <button onClick={()=>setActive(active===lesson.id?null:lesson.id)} aria-expanded={active===lesson.id} data-testid={`button-topic-${lesson.id}`} className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-[#f8fbfa] sm:px-7">
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${completed.includes(lesson.id)?'bg-teal-100 text-teal-800':'bg-slate-100 text-slate-500'}`}>{completed.includes(lesson.id)?<Check size={14}/>:String(i+1).padStart(2,'0')}</span><span className="min-w-0 flex-1"><span className="block font-bold text-slate-800">{lesson.title}</span><span className="mt-1 block text-xs text-slate-500">About 3 minutes · Beginner friendly</span></span>{active===lesson.id?<ChevronDown size={18} className="text-teal-800"/>:<ChevronRight size={18} className="text-slate-400"/>}
+      </button>
+      {active===lesson.id&&<LessonDetail lesson={lesson} complete={completed.includes(lesson.id)} onComplete={()=>toggleDone(lesson.id)}/>}
+    </div>)}</div>
+  </section>;
+}
+function LessonDetail({ lesson, complete, onComplete }: { lesson:Lesson; complete:boolean; onComplete:()=>void }) {
+  return <div className="animate-in fade-in slide-in-from-top-1 border-t border-teal-50 bg-[#f8fbfa] px-5 pb-5 pt-4 sm:px-[4.5rem] sm:pb-6">
+    <p data-testid={`text-lesson-explanation-${lesson.id}`} className="max-w-4xl leading-7 text-slate-700">{lesson.explanation}</p>
+    {lesson.responsibility&&<div className="mt-4 overflow-x-auto rounded-2xl border border-[#dce8e8] bg-white" data-testid="table-service-responsibilities"><table className="w-full min-w-[620px] text-left text-sm"><thead className="bg-[#eef6f4] text-xs uppercase tracking-wide text-slate-600"><tr><th scope="col" className="px-4 py-3">Service model</th><th scope="col" className="px-4 py-3">Provider manages</th><th scope="col" className="px-4 py-3">Customer manages</th></tr></thead><tbody className="divide-y divide-slate-100">{lesson.responsibility.map(row=><tr key={row.model}><th scope="row" className="whitespace-nowrap px-4 py-3 font-extrabold text-slate-800">{row.model}</th><td className="px-4 py-3 leading-5 text-slate-600">{row.provider}</td><td className="px-4 py-3 leading-5 text-slate-600">{row.customer}</td></tr>)}</tbody></table></div>}
+    <div className="mt-4 grid gap-3 md:grid-cols-2"><div className="rounded-2xl border border-[#dcece8] bg-white p-4"><p className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-teal-800"><Globe2 size={14}/> A familiar example</p><p className="text-sm leading-6 text-slate-600">{lesson.example}</p></div><div className="rounded-2xl border border-[#f0e4ca] bg-[#fffaf0] p-4"><p className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[#8b642c]"><Lightbulb size={14}/> Don’t mix this up</p><p className="text-sm leading-6 text-slate-600">{lesson.distinction}</p></div></div>
+    <div className="mt-3 flex flex-col justify-between gap-3 rounded-xl bg-[#e6f2ef] px-4 py-3 sm:flex-row sm:items-center"><p className="text-sm text-slate-700"><strong className="mr-1 text-teal-900">Quick recap:</strong>{lesson.summary}</p><button data-testid={`button-complete-${lesson.id}`} onClick={onComplete} className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold ${complete?'bg-white text-teal-800':'bg-teal-800 text-white hover:bg-teal-900'}`}>{complete?<><CheckCircle2 size={14}/> Completed</>:<>Mark complete <Check size={14}/></>}</button></div>
+  </div>;
+}
+
+const prompts = ['Explain cloud computing in simple words','What is the difference between a region and a zone?','Give me an African example of elasticity','Quiz me on cloud service models'];
+function StudyBuddy({ chat, setChat, style }: { chat:ChatMessage[]; setChat:(v:ChatMessage[])=>void; style:string }) {
+  const [draft,setDraft]=useState('');
+  const [swahili,setSwahili]=useState(()=>style==='Swahili explanations');
+  const [error,setError]=useState('');
+  const [busy,setBusy]=useState(false);
+  useEffect(()=>setSwahili(style==='Swahili explanations'),[style]);
+  function respond(userText:string, action?:string) {
+    const value=userText.trim(); if(!value) return;
+    setError('');setBusy(true);
+    const user:ChatMessage={role:'user',text:value,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})};
+    let answer='Let’s make that idea smaller. Cloud computing means using computing services over the internet instead of owning all the equipment yourself. Think of it like using a matatu when you need a ride rather than buying a bus.';
+    if(/region|zone/i.test(value)) answer='A region is a geographic area. A zone is a separate physical location inside a region. Think of a region as Nairobi, and zones as separate, independently powered sites within that wider area. A region is not the same thing as a zone.';
+    else if(/elastic|scale/i.test(value)) answer='Elasticity is cloud capacity that adjusts as demand changes. Imagine a market stall adding more hands when a crowd arrives, then scaling down when it gets quiet. Scalability means you can grow; elasticity is that growth or reduction responding dynamically.';
+    else if(/service model|iaas|paas|saas/i.test(value)) answer='IaaS gives you basic building blocks, like an empty shop shell. PaaS gives you a ready workbench to build your product. SaaS is the finished service people use, like a ready-to-use email app. As you move from IaaS to SaaS, the provider manages more.';
+    else if(/question|quiz|practice/i.test(value)) answer='Practice question: A school wants to run its app without managing virtual machines or the operating system. Which service model is the closest fit: IaaS, PaaS, or SaaS? Think about how much of the platform the provider manages.';
+    else if(/summary|summari/i.test(value)) answer='Quick cloud recap: Cloud computing rents technology on demand. IaaS is infrastructure, PaaS is a managed app platform, and SaaS is finished software. You remain responsible for the parts assigned to you, especially identity, data, and configuration.';
+    else if(/cost|budget|spend/i.test(value)) answer='Cloud costs depend on what you choose, where it runs, and how long or often it is used. Estimate with the pricing calculator, review actual spending with Cost Management, and use tags to see which project is using resources.';
+    else if(/swahili|kiswahili/i.test(value)||swahili) answer='Wingu (cloud) ni huduma za kompyuta unazotumia kupitia intaneti badala ya kununua vifaa vyote mwenyewe. Mfano: biashara ndogo inaweza kuweka duka lake mtandaoni bila kununua seva. Kwa kifupi: tumia unachohitaji, lipia matumizi, na linda data yako.';
+    if(action==='simpler') answer='Kwa lugha rahisi: cloud ni kutumia huduma za kompyuta kupitia intaneti. Hununui seva yako mwenyewe. Unatumia unachohitaji, kisha unalipa kulingana na huduma na matumizi.';
+    if(action==='africa') answer='Imagine a small Mombasa tour company whose booking app gets busy during school holidays. Cloud capacity can grow for the rush and reduce when bookings are quieter, rather than the company buying equipment for just a few busy weeks.';
+    if(action==='detail') answer='A little more detail: with cloud services, the provider maintains the physical datacentres and underlying hardware. Your responsibility depends on the service model. With IaaS, you manage more of the operating system and app; with SaaS, the provider manages most of the application platform, while you still manage user access and your data.';
+    if(action==='summary') answer='Revision notes: Cloud services are on-demand. Public, private, and hybrid describe deployment patterns. IaaS, PaaS, and SaaS describe service responsibility. Availability means reachable; scalability means able to grow; elasticity means capacity adjusts with demand.';
+    if(action==='question') answer='Original practice question: A community group stores event photos in Azure and wants object storage that can scale. Which service should it consider? A) Blob Storage B) Azure Policy C) Resource groups D) ExpressRoute. Answer: A) Blob Storage, which is designed for object data such as images.';
+    if(swahili) answer=`${answer}\n\nMaelezo kwa Kiswahili: Wingu hukuwezesha kutumia huduma za kompyuta kupitia intaneti bila kununua vifaa vyote mwenyewe.`;
+    setDraft('');
+    window.setTimeout(()=>{setChat([...chat,user,{role:'assistant',text:answer,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}]);setBusy(false);},280);
+  }
+  function action(label:string, action:string) { respond(label,action); }
+  const clear=()=>{setChat([]);setError('');};
+  return <div className="page-enter mx-auto max-w-7xl px-5 pt-10 lg:px-8">
+    <div className="mb-7 max-w-3xl"><Eyebrow><MessageCircle size={15}/> A STUDY SPACE THAT MEETS YOU WHERE YOU ARE</Eyebrow><h1 data-testid="text-buddy-title" className="text-4xl font-extrabold text-slate-900 sm:text-5xl">Let’s figure it out together.</h1><p className="mt-3 text-slate-600">Ask about a cloud concept, try a familiar example, or turn a tricky distinction into a quick recap.</p></div>
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_310px]">
+      <section className="soft-card flex min-h-[580px] flex-col overflow-hidden rounded-[24px] border border-[#dbe7e7] bg-white" aria-label="Study Buddy chat">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-[15px] bg-[#e1f2ef] text-teal-800"><CloudCog size={23}/></span><div><h2 className="font-extrabold text-slate-900">Study Buddy</h2><p className="text-xs text-slate-500">A preset AZ-900 learning companion</p></div></div><span data-testid="status-demo-mode" className="inline-flex items-center gap-1.5 rounded-full bg-[#fff2dc] px-3 py-1.5 text-[10px] font-extrabold tracking-[.13em] text-[#815b20]"><span className="h-1.5 w-1.5 rounded-full bg-[#c88e2d]"></span> DEMO MODE</span></div>
+        <div className="border-b border-[#f0e2c9] bg-[#fffaf0] px-5 py-3 text-xs leading-5 text-[#715a36] sm:px-6" data-testid="text-demo-disclaimer"><strong>Demo mode:</strong> responses are predefined learning examples, not generated by a live AI model. Live AI responses require an OpenAI API key.</div>
+        <div className="chat-scroll flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-6" aria-live="polite" data-testid="chat-message-list">
+          {chat.length===0?<div className="mx-auto max-w-lg py-8 text-center"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] bg-[#e7f4f1] text-teal-800"><Sparkles size={28}/></div><h3 className="mt-5 text-xl font-extrabold text-slate-900">Karibu. You’re in the right place.</h3><p className="mt-2 text-sm leading-6 text-slate-600">Cloud can feel like a lot at first. Start with any question below — we’ll take it one clear step at a time.</p><div className="mt-5 flex flex-wrap justify-center gap-2">{prompts.map((p,i)=><button key={p} data-testid={`button-suggested-prompt-${i}`} onClick={()=>respond(p)} className="rounded-full border border-[#d8e8e5] bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-teal-400 hover:text-teal-900">{p}</button>)}</div></div>:
+            chat.map((message,i)=><div data-testid={`message-${message.role}-${i}`} key={`${i}-${message.time}`} className={`flex ${message.role==='user'?'justify-end':'justify-start'}`}><div className={`max-w-[88%] rounded-2xl px-4 py-3 ${message.role==='user'?'rounded-br-md bg-[#0a657a] text-white':'rounded-bl-md bg-[#eef5f3] text-slate-800'}`}><p className="whitespace-pre-line text-sm leading-6">{message.text}</p><span className={`mt-2 block text-[10px] ${message.role==='user'?'text-white/60':'text-slate-500'}`}>{message.role==='assistant'?'Preset learning response · ':''}{message.time}</span></div></div>)}
+          {busy&&<div data-testid="status-demo-response" className="flex items-center gap-2 text-xs font-semibold text-slate-500"><span className="flex gap-1"><i className="h-1.5 w-1.5 animate-pulse rounded-full bg-teal-600"></i><i className="h-1.5 w-1.5 animate-pulse rounded-full bg-teal-600 [animation-delay:120ms]"></i><i className="h-1.5 w-1.5 animate-pulse rounded-full bg-teal-600 [animation-delay:240ms]"></i></span>Preparing a preset learning response…</div>}
+        </div>
+        {error&&<p role="alert" data-testid="status-chat-error" className="px-6 pb-2 text-xs text-red-700">{error}</p>}
+        <form className="border-t border-slate-100 p-4 sm:p-5" onSubmit={e=>{e.preventDefault(); if(!draft.trim()){setError('Type a question or choose one of the suggested prompts.');return;} respond(draft);}}>
+          <div className="flex items-end gap-2 rounded-2xl border border-[#d9e6e6] bg-[#f9fbfb] p-2 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-100"><textarea value={draft} onChange={e=>{setDraft(e.target.value);setError('');}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();respond(draft);}}} rows={2} aria-label="Your study question" placeholder="Ask a question about cloud concepts…" data-testid="input-chat-message" className="max-h-28 min-h-[45px] flex-1 resize-y bg-transparent px-2 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"/><button type="submit" data-testid="button-send-message" aria-label="Send message" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-800 text-white hover:bg-teal-900"><Send size={17}/></button></div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-600"><input type="checkbox" data-testid="checkbox-swahili" checked={swahili} onChange={e=>setSwahili(e.target.checked)} className="h-4 w-4 accent-teal-700"/> Add optional Swahili explanation</label><button type="button" onClick={clear} data-testid="button-clear-chat" disabled={!chat.length} className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">Clear chat</button></div>
+        </form>
+      </section>
+      <aside className="space-y-4">
+        <section className="soft-card rounded-[22px] border border-[#dbe7e7] bg-white p-5"><Eyebrow><Lightbulb size={14}/> QUICK STUDY TOOLS</Eyebrow><h2 className="mb-4 text-lg font-extrabold text-slate-900">Choose a learning move</h2><div className="space-y-2">{[{label:'Explain it more simply',key:'simpler',icon:Sparkles},{label:'Give me an African example',key:'africa',icon:Globe2},{label:'Summarise key points',key:'summary',icon:ListChecks},{label:'Give me an original practice question',key:'question',icon:CircleHelp},{label:'Tell me a little more',key:'detail',icon:ArrowDownRight}].map(({label,key,icon:Icon})=><button key={key} onClick={()=>action(label,key)} data-testid={`button-buddy-${key}`} className="flex w-full items-center gap-3 rounded-xl border border-slate-100 px-3 py-3 text-left text-xs font-bold text-slate-700 transition-colors hover:border-teal-200 hover:bg-[#f5faf8]"><Icon size={16} className="text-teal-800"/><span className="flex-1">{label}</span><ArrowRight size={13} className="text-slate-400"/></button>)}</div></section>
+        <section className="rounded-[22px] border border-[#dbe7e7] bg-[#e9f3f1] p-5"><p className="text-xs font-extrabold uppercase tracking-widest text-teal-800">A quick reminder</p><p className="mt-2 text-sm leading-6 text-slate-700">This companion uses set responses to help you study. It won’t pretend to know something it doesn’t, and your chat stays in this browser.</p><Link href="/learn" data-testid="link-buddy-lessons" className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-teal-900">Browse lessons <ArrowRight size={14}/></Link></section>
+      </aside>
+    </div>
+  </div>;
+}
+
+function Quiz({ history, setHistory }: { history:{date:string;score:number;total:number;mode:string}[]; setHistory:(v:{date:string;score:number;total:number;mode:string}[])=>void }) {
+  const [mode,setMode]=useState('mixed');
+  const [topic,setTopic]=useState(modules[0].lessons[0].id);
+  const [started,setStarted]=useState(false);
+  const [items,setItems]=useState<typeof questions>([]);
+  const [index,setIndex]=useState(0);
+  const [selected,setSelected]=useState<number|null>(null);
+  const [score,setScore]=useState(0);
+  const [review,setReview]=useState<number[]>([]);
+  const [finished,setFinished]=useState(false);
+  const [showReview,setShowReview]=useState(false);
+  const choices=useMemo(()=>mode==='topic'?(questions.filter(q=>q.topic===topic).length?questions.filter(q=>q.topic===topic):[makeLessonQuestion(topic)!]):questions, [mode,topic]);
+  const current=items[index];
+  function start() { const qs=mode==='topic'?questions.filter(q=>q.topic===topic):[...questions].sort(()=>Math.random()-.5).slice(0,10); setItems(qs);setIndex(0);setScore(0);setReview([]);setSelected(null);setFinished(false);setShowReview(false);setStarted(true); }
+  function choose(i:number) { if(selected!==null||!current)return; setSelected(i); if(i===current.answer)setScore(s=>s+1);else setReview(r=>[...r,index]); }
+  function next() { if(index<items.length-1){setIndex(index+1);setSelected(null);}else{const final=score;setFinished(true);setHistory([{date:new Date().toLocaleDateString(),score:final,total:items.length,mode:mode==='topic'?'Topic practice':'Mixed practice'},...history].slice(0,30));} }
+  function restart() {setStarted(false);setItems([]);setFinished(false);setSelected(null);setShowReview(false);}
+  return <div className="page-enter mx-auto max-w-7xl px-5 pt-10 lg:px-8">
+    <div className="max-w-3xl"><Eyebrow><ListChecks size={15}/> PRACTISE WITHOUT PRESSURE</Eyebrow><h1 data-testid="text-quiz-title" className="text-4xl font-extrabold text-slate-900 sm:text-5xl">A little practice goes a long way.</h1><p className="mt-3 leading-7 text-slate-600">Original beginner-friendly questions, instant explanations, and a chance to try again. This is practice, not a prediction of your exam result.</p></div>
+    <div className="mt-7 rounded-xl border border-[#f1dfbd] bg-[#fff8e9] px-4 py-3 text-xs leading-5 text-[#735d39]" data-testid="text-quiz-disclaimer"><strong>Study aid only:</strong> These original questions are not official Microsoft exam questions and do not guarantee exam readiness or a particular exam score.</div>
+    {!started?<section className="soft-card mt-6 max-w-3xl rounded-[24px] border border-[#dbe7e7] bg-white p-6 sm:p-8"><h2 className="text-2xl font-extrabold text-slate-900">Set up your practice</h2><p className="mt-2 text-sm text-slate-600">Choose a focused topic or mix questions across all three modules.</p><div className="mt-6 grid gap-3 sm:grid-cols-2"><button onClick={()=>setMode('mixed')} data-testid="button-mode-mixed" aria-pressed={mode==='mixed'} className={`rounded-2xl border p-4 text-left ${mode==='mixed'?'border-teal-500 bg-[#edf7f4] ring-1 ring-teal-500':'border-slate-200 hover:border-teal-300'}`}><span className="flex items-center gap-2 font-bold text-slate-800"><Layers3 size={18} className="text-teal-800"/> Mixed practice</span><span className="mt-2 block text-xs leading-5 text-slate-600">10 questions from across your learning path.</span></button><button onClick={()=>setMode('topic')} data-testid="button-mode-topic" aria-pressed={mode==='topic'} className={`rounded-2xl border p-4 text-left ${mode==='topic'?'border-teal-500 bg-[#edf7f4] ring-1 ring-teal-500':'border-slate-200 hover:border-teal-300'}`}><span className="flex items-center gap-2 font-bold text-slate-800"><Target size={18} className="text-teal-800"/> Topic practice</span><span className="mt-2 block text-xs leading-5 text-slate-600">Focus your attention on one topic.</span></button></div>
+      {mode==='topic'&&<label className="mt-5 block text-sm font-bold text-slate-700">Choose a topic<select value={topic} onChange={e=>setTopic(e.target.value)} data-testid="select-quiz-topic" className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-teal-500">{modules.map(m=><optgroup key={m.id} label={m.title}>{m.lessons.map(l=><option key={l.id} value={l.id}>{l.title}</option>)}</optgroup>)}</select></label>}
+      <button onClick={start} data-testid="button-start-quiz" className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-teal-800 px-6 py-3 text-sm font-bold text-white hover:bg-teal-900">Start practice <ArrowRight size={17}/></button>
+      <p className="mt-2 text-xs text-slate-500">{mode==='topic'?`${choices.length} original question${choices.length===1?'':'s'} in this topic.`:'10 questions per mixed round.'}</p>
+    </section>:finished?<section className="soft-card mt-6 max-w-3xl rounded-[24px] border border-[#dbe7e7] bg-white p-6 sm:p-9" data-testid="section-quiz-results">
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e4f3ef] text-teal-800"><CheckCircle2 size={28}/></span><Eyebrow><Sparkles size={14}/> ROUND COMPLETE</Eyebrow><h2 className="text-3xl font-extrabold text-slate-900">You showed up. That counts.</h2><div className="mt-5 rounded-2xl bg-[#f1f8f6] p-5"><div className="flex items-end gap-2"><span data-testid="text-quiz-score" className="text-5xl font-extrabold tracking-tight text-teal-900">{score}</span><span className="pb-1 text-lg font-bold text-slate-500">/ {items.length} correct</span></div><div className="progress-track mt-4 h-2.5 overflow-hidden rounded-full"><div className="h-full rounded-full bg-teal-600" style={{width:`${score/items.length*100}%`}}/></div><p className="mt-3 text-sm text-slate-600">{score===items.length?'A strong round — take a moment to feel good about that.':score>=items.length/2?'Good progress. Review a few explanations, then give it another go.':'Every question is a clue about what to learn next. You can do another round.'}</p></div>
+      {review.length>0&&<button onClick={()=>setShowReview(!showReview)} data-testid="button-review-incorrect" className="mt-4 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-teal-900 hover:bg-teal-50"><BookOpen size={16}/>{showReview?'Hide':'Review'} {review.length} question{review.length===1?'':'s'} to revisit</button>}
+      {showReview&&<div className="mt-3 space-y-3" data-testid="list-incorrect-review">{review.map(ri=>{const q=items[ri];return <div key={q.id} className="rounded-xl border border-[#efdfc4] bg-[#fffaf1] p-4"><p className="font-bold text-slate-800">{q.question}</p><p className="mt-2 text-sm text-slate-600"><strong>Answer:</strong> {q.choices[q.answer]}</p><p className="mt-1 text-sm leading-6 text-slate-600">{q.explanation}</p></div>})}</div>}
+      <div className="mt-6 flex flex-wrap gap-3"><button onClick={restart} data-testid="button-quiz-restart" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-teal-800 px-5 py-3 text-sm font-bold text-white hover:bg-teal-900"><RotateCcw size={16}/>Try another round</button><Link href="/learn" data-testid="link-quiz-learn" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Back to lessons <ArrowRight size={16}/></Link></div>
+    </section>:current?<section className="soft-card mt-6 max-w-3xl rounded-[24px] border border-[#dbe7e7] bg-white p-6 sm:p-9" data-testid="section-active-question">
+      <div className="flex items-center justify-between"><span className="rounded-full bg-[#e4f3ef] px-3 py-1.5 text-xs font-bold text-teal-900">{mode==='mixed'?'Mixed practice':'Topic practice'}</span><span className="text-sm font-bold text-slate-500" data-testid="text-quiz-question-count">Question {index+1} of {items.length}</span></div>
+      <div className="progress-track mt-4 h-1.5 overflow-hidden rounded-full"><div className="h-full rounded-full bg-teal-600 transition-all" style={{width:`${(index+1)/items.length*100}%`}}/></div>
+      <h2 data-testid={`text-question-${current.id}`} className="mt-7 text-xl font-extrabold leading-8 text-slate-900 sm:text-2xl">{current.question}</h2>
+      <div className="mt-5 space-y-3">{current.choices.map((choice,i)=><button key={choice} onClick={()=>choose(i)} disabled={selected!==null} data-testid={`button-answer-${i}`} aria-pressed={selected===i} className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm font-semibold transition-colors ${selected===i?(i===current.answer?'border-emerald-500 bg-emerald-50 text-emerald-900':'border-rose-300 bg-rose-50 text-rose-900'):selected!==null&&i===current.answer?'border-emerald-500 bg-emerald-50 text-emerald-900':'border-slate-200 bg-white text-slate-700 hover:border-teal-400 hover:bg-[#f7fbfa]'}`}><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-extrabold text-slate-500">{String.fromCharCode(65+i)}</span>{choice}{selected!==null&&i===current.answer&&<CheckCircle2 size={17} className="ml-auto text-emerald-700"/>}</button>)}</div>
+      {selected!==null&&<div role="status" data-testid="text-answer-explanation" className={`mt-4 rounded-xl p-4 ${selected===current.answer?'bg-emerald-50 text-emerald-950':'bg-[#fff7e8] text-slate-800'}`}><p className="font-extrabold">{selected===current.answer?'That’s right.':'Not quite — and now you know.'}</p><p className="mt-1 text-sm leading-6">{current.explanation}</p></div>}
+      {selected!==null&&<button onClick={next} data-testid="button-next-question" className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-teal-800 px-5 py-3 text-sm font-bold text-white hover:bg-teal-900">{index===items.length-1?'See my results':'Next question'} <ArrowRight size={16}/></button>}
+    </section>:<div role="alert" data-testid="status-quiz-error" className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-800">We could not prepare questions for this topic. Choose another topic and try again.</div>}
+    <section className="mt-10 max-w-3xl"><h2 className="text-xl font-extrabold text-slate-900">Recent practice</h2>{history.length===0?<div data-testid="empty-quiz-history" className="mt-3 rounded-2xl border border-dashed border-[#cbdcda] bg-white/65 p-6"><p className="font-bold text-slate-700">Your first round is waiting.</p><p className="mt-1 text-sm text-slate-500">Finish a practice round and your results will be saved on this device.</p></div>:<div className="mt-3 space-y-2">{history.slice(0,4).map((h,i)=><div key={`${h.date}-${i}`} data-testid={`row-quiz-history-${i}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3"><div><p className="text-sm font-bold text-slate-800">{h.mode}</p><p className="text-xs text-slate-500">{h.date}</p></div><span className="font-extrabold text-teal-900">{h.score}/{h.total}</span></div>)}</div>}</section>
+  </div>;
+}
+
+function Progress({ completed, goal, setGoal, history, checklist, setChecklist }: { completed:string[];goal:number;setGoal:(n:number)=>void;history:{date:string;score:number;total:number;mode:string}[];checklist:string[];setChecklist:(v:string[])=>void }) {
+  const allDone=completed.length;
+  const average=history.length?Math.round(history.reduce((n,h)=>n+h.score/h.total*100,0)/history.length):0;
+  const nextLessons=modules.flatMap(module=>module.lessons.map(lesson=>({module:module.title,...lesson}))).filter(lesson=>!completed.includes(lesson.id)).slice(0,3);
+  const revisionItems=[['shared-responsibility','I can explain what the cloud provider and customer each manage.'],['service-models','I can distinguish IaaS, PaaS, and SaaS.'],['identity-access','I can tell authentication apart from authorisation.'],['cost-monitoring','I know where to estimate costs and how to monitor a workload.']];
+  function toggleChecklist(id:string) { setChecklist(checklist.includes(id)?checklist.filter(item=>item!==id):[...checklist,id]); }
+  return <div className="page-enter mx-auto max-w-7xl px-5 pt-10 lg:px-8">
+    <div className="max-w-3xl"><Eyebrow><BarChart3 size={15}/> YOUR PERSONAL LEARNING SPACE</Eyebrow><h1 data-testid="text-progress-title" className="text-4xl font-extrabold text-slate-900 sm:text-5xl">Look how far you’ve come.</h1><p className="mt-3 text-slate-600">A gentle snapshot of your learning, saved in this browser. No account and no cross-device sync.</p></div>
+    <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[{label:'Topics completed',value:`${allDone}/${totalTopics}`,icon:BookOpen,detail:'Across all three modules'},{label:'Practice rounds',value:String(history.length),icon:ListChecks,detail:'Your recent quiz attempts'},{label:'Latest quiz score',value:history.length?`${Math.round(history[0].score/history[0].total*100)}%`:'—',icon:CheckCircle2,detail:history.length?`${history[0].score} of ${history[0].total} correct`:'Complete a round to begin'},{label:'Practice average',value:history.length?`${average}%`:'—',icon:Target,detail:history.length?'Across saved rounds':'Complete a round to begin'}].map(item=><section key={item.label} data-testid={`card-stat-${item.label.toLowerCase().replaceAll(' ','-')}`} className="soft-card rounded-[22px] border border-[#dbe7e7] bg-white p-5"><div className="flex items-center justify-between"><span className="text-sm font-bold text-slate-600">{item.label}</span><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e6f3f0] text-teal-800"><item.icon size={19}/></span></div><p className="mt-4 text-3xl font-extrabold text-slate-900">{item.value}</p><p className="mt-1 text-xs text-slate-500">{item.detail}</p></section>)}</div>
+    <div className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
+      <section className="soft-card rounded-[24px] border border-[#dbe7e7] bg-white p-6 sm:p-7"><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><Eyebrow><Target size={14}/> BUILD A STEADY RHYTHM</Eyebrow><h2 className="text-2xl font-extrabold text-slate-900">Your daily topic goal</h2></div><label className="flex items-center gap-2 text-xs font-bold text-slate-600">Topics per day<select value={goal} onChange={e=>setGoal(Number(e.target.value))} data-testid="select-daily-goal" className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm font-bold text-slate-800"><option value={1}>1 topic</option><option value={2}>2 topics</option><option value={3}>3 topics</option><option value={5}>5 topics</option></select></label></div><div className="mt-6 rounded-2xl bg-[#edf6f4] p-5"><div className="flex items-center gap-2 text-sm font-bold text-slate-800"><Flame size={17} className="text-[#d18a2d}"/> Your pace, your way</div><p className="mt-2 text-sm leading-6 text-slate-600">Aim for {goal} {goal===1?'topic':'topics'} when it works for you. This is a personal target, not a streak counter or a reason to feel behind.</p></div></section>
+      <section className="soft-card rounded-[24px] border border-[#dbe7e7] bg-white p-6 sm:p-7"><Eyebrow><GraduationCap size={15}/> MODULE CHECK-IN</Eyebrow><h2 className="text-2xl font-extrabold text-slate-900">Small steps add up.</h2><div className="mt-5 space-y-5">{modules.map((m,i)=>{const count=m.lessons.filter(l=>completed.includes(l.id)).length;return <div key={m.id} data-testid={`progress-module-${m.id}`}><div className="mb-2 flex justify-between gap-3"><span className="text-sm font-bold text-slate-700">{m.title}</span><span className="shrink-0 text-xs font-bold text-slate-500">{count}/{m.lessons.length}</span></div><div className="progress-track h-2 overflow-hidden rounded-full"><div className={`h-full rounded-full ${i===0?'bg-[#3881a4]':i===1?'bg-[#278270]':'bg-[#c18a3d]'}`} style={{width:`${count/m.lessons.length*100}%`}}/></div></div>})}</div><Link href="/learn" data-testid="link-progress-learn" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-teal-900">Continue learning <ArrowRight size={16}/></Link></section>
+    </div>
+     <div className="mt-5 grid gap-5 lg:grid-cols-2">
+       <section className="soft-card rounded-[24px] border border-[#dbe7e7] bg-white p-6"><Eyebrow><Compass size={15}/> A GOOD NEXT STEP</Eyebrow><h2 className="text-2xl font-extrabold text-slate-900">Suggested next topics</h2>{nextLessons.length?<div className="mt-4 space-y-2">{nextLessons.map(lesson=><Link href="/learn" key={lesson.id} data-testid={`link-suggested-topic-${lesson.id}`} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 p-3 hover:border-teal-200 hover:bg-[#f7fbfa]"><span><span className="block text-sm font-bold text-slate-800">{lesson.title}</span><span className="mt-1 block text-xs text-slate-500">{lesson.module}</span></span><ArrowRight size={16} className="shrink-0 text-teal-800"/></Link>)}</div>:<p className="mt-3 text-sm text-slate-600">You have completed every topic. Revisit any lesson or try another quiz.</p>}</section>
+       <section className="soft-card rounded-[24px] border border-[#dbe7e7] bg-white p-6"><Eyebrow><CheckCircle2 size={15}/> QUICK REVISION CHECKLIST</Eyebrow><h2 className="text-2xl font-extrabold text-slate-900">Ready to explain it?</h2><p className="mt-2 text-sm text-slate-600">Tick each idea when you can explain it in your own words.</p><div className="mt-4 space-y-3">{revisionItems.map(([id,label])=><label key={id} className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-100 p-3 text-sm leading-5 text-slate-700 hover:bg-[#f7fbfa]"><input type="checkbox" checked={checklist.includes(id)} onChange={()=>toggleChecklist(id)} data-testid={`checkbox-revision-${id}`} className="mt-0.5 h-4 w-4 shrink-0 accent-teal-700"/><span>{label}</span></label>)}</div></section>
+     </div>
+    <section className="mt-5 soft-card rounded-[24px] border border-[#dbe7e7] bg-white p-6"><div className="flex items-center justify-between"><div><Eyebrow><ListChecks size={14}/> QUIZ HISTORY</Eyebrow><h2 className="text-2xl font-extrabold text-slate-900">Practice you’ve done</h2></div><Link href="/quiz" data-testid="link-progress-quiz" className="inline-flex items-center gap-2 text-sm font-bold text-teal-900">Practise again <ArrowRight size={15}/></Link></div>{history.length? <div className="mt-5 grid gap-3 md:grid-cols-2">{history.slice(0,6).map((h,i)=><div key={`${h.date}-${i}`} data-testid={`progress-quiz-${i}`} className="flex items-center justify-between rounded-xl border border-slate-100 bg-[#fafcfc] p-4"><span><span className="block text-sm font-bold text-slate-800">{h.mode}</span><span className="mt-1 block text-xs text-slate-500">{h.date}</span></span><span className="rounded-lg bg-teal-50 px-3 py-2 text-sm font-extrabold text-teal-900">{h.score}/{h.total}</span></div>)}</div>:<div data-testid="empty-progress-quizzes" className="mt-4 rounded-2xl border border-dashed border-[#cbdcda] bg-[#fbfdfd] p-6"><p className="font-bold text-slate-700">No practice rounds just yet.</p><p className="mt-1 text-sm text-slate-500">Try a few original questions to see your history here.</p></div>}</section>
+    <section className="mt-5 rounded-[22px] border border-[#dbe7e7] bg-[#e9f3f1] p-5 sm:flex sm:items-center sm:justify-between"><div><p className="font-extrabold text-slate-800">Your learning data stays in this browser.</p><p className="mt-1 text-sm text-slate-600">Progress and quiz history use local storage and are not synced to other devices.</p></div><button onClick={()=>{if(window.confirm('Clear completed topics and quiz history saved on this device?')){store.write('completed',[]);store.write('history',[]);window.location.reload();}}} data-testid="button-reset-progress" className="mt-4 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 sm:mt-0">Reset saved progress</button></section>
+  </div>;
+}
+
+function About() {
+  return <div className="page-enter mx-auto max-w-7xl px-5 pt-10 lg:px-8">
+    <section className="hero-panel rounded-[30px] px-7 py-12 text-white sm:px-12 sm:py-16"><Eyebrow><Cloud size={15}/> WHY WINGUSTUDY EXISTS</Eyebrow><h1 data-testid="text-about-title" className="max-w-3xl text-4xl font-extrabold leading-tight sm:text-6xl">Cloud learning should feel within reach.</h1><p className="mt-5 max-w-2xl text-base leading-7 text-white/80">WinguStudy AI is a friendly, independent study companion for people beginning their Azure cloud journey — especially learners who want a clear first step, not a wall of acronyms.</p></section>
+    <div className="mt-8 grid gap-5 lg:grid-cols-[1fr_.8fr]">
+      <section className="soft-card rounded-[24px] border border-[#dbe7e7] bg-white p-6 sm:p-8"><Eyebrow><Compass size={15}/> OUR APPROACH</Eyebrow><h2 className="text-2xl font-extrabold text-slate-900">Familiar first. Technical next.</h2><p className="mt-4 leading-7 text-slate-600">A cloud region can sound abstract until you connect it to a place on a map. Elasticity makes more sense when you picture a busy market adding hands at rush hour. We use everyday examples from Kenya and across Africa to help new ideas take root.</p><p className="mt-4 leading-7 text-slate-600">Every topic includes an explanation, a practical example, a note on commonly confused ideas, and a short recap. You can choose simple English, African examples, or optional Kiswahili explanations.</p></section>
+      <section className="soft-card rounded-[24px] border border-[#dbe7e7] bg-white p-6 sm:p-8"><Eyebrow><ShieldCheck size={15}/> CLEAR ABOUT THE DETAILS</Eyebrow><h2 className="text-2xl font-extrabold text-slate-900">Independent, transparent, yours.</h2><ul className="mt-5 space-y-4">{[['No account needed','Your topics, quiz history, goal, and demo chat are stored locally in this browser.'],['Buddy is in demo mode','It uses concise, predefined responses. A live AI model is not connected; that needs an OpenAI API key.'],['Unofficial study aid','Questions and explanations are original learning material, not official exam content or a promise of exam results.']].map(([title,desc])=><li key={title} className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-teal-700"/><div><h3 className="text-sm font-extrabold text-slate-800">{title}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{desc}</p></div></li>)}</ul></section>
+    </div>
+    <section className="mt-5 rounded-[24px] border border-[#e8dec9] bg-[#fff9ed] p-6 sm:p-8"><p className="text-xs font-extrabold uppercase tracking-widest text-[#84602e]">A note about AZ-900</p><h2 className="mt-2 text-2xl font-extrabold text-slate-900">Learn with confidence, keep checking official guidance.</h2><p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600">This learning scope was checked against the Microsoft Learn skills measured as of July 20, 2026. It is an independent study companion, not a claim to cover every possible exam topic. Azure services and exam objectives can change, so check the current guide before your exam.</p><a data-testid="link-official-study-guide" href="https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-900" target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-teal-900 shadow-sm hover:bg-teal-50">Find the official study guide <ExternalLink size={15}/></a></section>
+    <div className="mt-7 flex flex-wrap gap-3"><ButtonLink href="/learn" testId="button-about-learn">Explore the lessons <ArrowRight size={16}/></ButtonLink><Link href="/" data-testid="link-about-home" className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700"><ArrowLeft size={16}/> Home</Link></div>
+  </div>;
 }
 
 function Router() {
-  return (
-    // Keep a shared shell (sidebar, navbar) outside the boundary so it
-    // survives a page crash.
-    <RoutedErrorBoundary>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route component={NotFound} />
-      </Switch>
-    </RoutedErrorBoundary>
-  );
+  const study=useStudyData();
+  const [style,setStyle]=useState(()=>store.read('learning-style','Simple English'));
+  function changeStyle(value:string) { setStyle(value);store.write('learning-style',value); }
+  return <ErrorBoundary><AppShell style={style} setStyle={changeStyle}><Switch>
+    <Route path="/" component={()=><Home completed={study.completed}/>}/>
+    <Route path="/learn" component={()=><Learn completed={study.completed} setCompleted={study.setCompleted} style={style}/>}/>
+    <Route path="/buddy" component={()=><StudyBuddy chat={study.chat} setChat={study.setChat} style={style}/>}/>
+    <Route path="/quiz" component={()=><Quiz history={study.history} setHistory={study.setHistory}/>}/>
+    <Route path="/progress" component={()=><Progress completed={study.completed} goal={study.goal} setGoal={study.setGoal} history={study.history} checklist={study.checklist} setChecklist={study.setChecklist}/>}/>
+    <Route path="/about" component={About}/>
+    <Route component={NotFound}/>
+  </Switch></AppShell></ErrorBoundary>;
 }
-
-function RoutedErrorBoundary({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
-}
-
 function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router/></WouterRouter><Toaster/></TooltipProvider></QueryClientProvider>;
 }
-
 export default App;
