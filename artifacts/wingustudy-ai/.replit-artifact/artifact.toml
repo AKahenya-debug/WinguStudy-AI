@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "WinguStudy AI"
+description = "An accessible Azure Fundamentals study companion for beginners, with African real-life examples, guided learning modules, practice quizzes, and locally saved progress."
+version = "1.0.0"
+id = "artifacts/wingustudy-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25892
+
+[services.development]
+run = "pnpm --filter @workspace/wingustudy-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/wingustudy-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/wingustudy-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25892"
+BASE_PATH = "/"

@@ -1,0 +1,488 @@
+# PROJECT: WinguStudy AI — Your Azure Study Buddy
+
+## 1. Project Overview
+
+Build a modern, responsive, beginner-friendly educational website called **WinguStudy AI**.
+
+**Tagline:** Understand the Cloud. Learn Your Way.
+
+The project is being developed for a beginner software engineering hackathon under the theme:
+
+**"Building Smarter Exam Prep Tools From Our Own Journey."**
+
+The goal is to help beginners preparing for the Microsoft Azure Fundamentals (AZ-900) certification understand cloud computing and Azure concepts without feeling overwhelmed by technical language.
+
+The website should act as an interactive AI study buddy that explains difficult cloud concepts in simple English, uses relatable African examples, provides original practice questions, and helps learners identify areas where they need more revision.
+
+Display a clear disclaimer stating that WinguStudy AI is an independent learning tool and is not officially affiliated with, endorsed by, or sponsored by Microsoft.
+
+## 2. Problem Statement
+
+Cloud computing concepts can feel abstract and confusing, especially for beginners who are learning about cloud services, infrastructure, networking, storage, security, and governance for the first time.
+
+Traditional study materials can sometimes feel too technical or disconnected from everyday experiences.
+
+WinguStudy AI addresses this problem by translating complex Azure concepts into simple explanations, relatable African examples, short revision notes, and interactive practice activities.
+
+## 3. Target Users
+
+The website is designed for:
+- Beginners learning cloud computing.
+- Students studying software engineering or information technology.
+- Learners preparing for the AZ-900 certification.
+- African learners who benefit from familiar real-life examples.
+- Self-taught developers who need an accessible study companion.
+
+## 4. Main Website Sections
+
+Create a navigation bar with the following sections:
+
+1. Home
+2. Learn Azure
+3. AI Study Buddy
+4. Practice Quiz
+5. My Progress
+6. About
+
+The interface should be easy to navigate for someone who is using a study website for the first time.
+
+# 5. AZ-900 LEARNING MODULES
+
+Organize the learning content into three main modules. Each module should contain the listed subtopics and a brief, beginner-friendly description.
+
+Use expandable cards, topic pages, or accordions to make the information easy to explore.
+
+## MODULE 1: CLOUD CONCEPTS
+
+Provide a short introduction explaining what cloud computing is and why organizations use it.
+
+### 1.1 Cloud Computing
+
+Explain cloud computing as the delivery of computing services, such as servers, storage, networking, and software, over the internet.
+
+Briefly explain:
+- What cloud computing means.
+- Why organizations use cloud services.
+- Benefits such as scalability, flexibility, availability, and reduced upfront infrastructure costs.
+- The difference between CapEx and OpEx.
+- Public, private, and hybrid cloud models.
+- The shared responsibility concept.
+- Consumption-based pricing.
+
+African example:
+Explain cloud computing using a small Kenyan business that stores customer records and runs its online shop using cloud services instead of purchasing and maintaining its own physical servers.
+
+### 1.2 Cloud Service Types
+
+Explain the three main cloud service models:
+
+**Infrastructure as a Service (IaaS):**
+Provides virtualized computing resources such as virtual machines, storage, and networking. The customer manages the operating system and applications, while the provider manages the underlying physical infrastructure.
+
+Example: A Kenyan startup rents virtual servers instead of buying physical computers for its server room.
+
+**Platform as a Service (PaaS):**
+Provides a platform for building and deploying applications without requiring the customer to manage the underlying operating system and physical infrastructure.
+
+Example: A software developer deploys a school management application without managing the physical servers.
+
+**Software as a Service (SaaS):**
+Provides ready-to-use software over the internet, usually through a browser or application.
+
+Example: A school uses a cloud-based email or document collaboration service.
+
+Include a simple comparison showing what the cloud provider manages and what the customer manages under each model.
+
+## MODULE 2: AZURE ARCHITECTURE AND SERVICES
+
+Introduce Microsoft Azure as a cloud computing platform offering services for computing, networking, storage, identity, security, and more.
+
+Explain each of the following subtopics in simple terms.
+
+### 2.1 Azure Architectural Concepts
+
+Cover:
+- Regions: Geographical areas containing Azure datacenters.
+- Availability zones: Separate locations within supported Azure regions that help protect applications against datacenter-level failures.
+- Region pairs: Certain Azure regions paired for specific resilience and disaster recovery considerations.
+- Azure resources: Individual cloud components such as virtual machines, databases, and storage accounts.
+- Resource groups: Containers used to organize and manage related Azure resources.
+- Subscriptions: Units used for billing, access management, and resource organization.
+- Management groups: Structures used to organize subscriptions and apply governance across them.
+
+African example:
+Explain resource groups using a school project where the classrooms, library, computers, and other facilities are grouped under one school administration structure.
+
+### 2.2 Azure Compute Services
+
+Explain:
+- Azure Virtual Machines: Virtual computers hosted in Azure.
+- Azure App Service: A platform for hosting web applications and APIs.
+- Azure Functions: A serverless service that runs code in response to events.
+- Azure Virtual Machine Scale Sets: Groups of virtual machines that can scale according to demand.
+- Containers: Lightweight environments for running applications consistently.
+- Azure Container Instances and Azure Kubernetes Service: Services for running containers, with Kubernetes Service supporting container orchestration.
+- Azure Virtual Desktop: A service for delivering virtual desktops and applications.
+
+African example:
+Explain how a Kenyan e-commerce website can use virtual machines or application hosting to serve customers and handle increased traffic during a major sales promotion.
+
+### 2.3 Azure Networking Services
+
+Explain:
+- Azure Virtual Network: A private network for Azure resources.
+- Subnets: Smaller network sections used to organize and isolate resources.
+- Network Security Groups: Rules that control permitted network traffic.
+- Azure VPN Gateway: Encrypted connections between Azure networks and other networks over the internet.
+- Azure ExpressRoute: Private network connectivity between an organization's network and Microsoft cloud services.
+- Azure DNS: A service for hosting and managing DNS domains.
+- Azure Load Balancer: Distributes network traffic across backend resources.
+- Azure Application Gateway: Provides application-level web traffic routing and related protection capabilities.
+
+African example:
+Use a university with separate networks for students, staff, and administration to explain network segmentation and security.
+
+### 2.4 Azure Storage Services
+
+Explain:
+- Azure Blob Storage: Stores unstructured data such as images, videos, documents, and backups.
+- Azure Files: Provides managed file shares that can be accessed by multiple systems.
+- Azure Queue Storage: Stores messages that help different application components communicate asynchronously.
+- Azure Table Storage: Provides a NoSQL key-value store for structured, non-relational data.
+- Azure Disk Storage: Provides persistent disks for Azure virtual machines.
+- Storage redundancy: Explain LRS, ZRS, GRS, and GZRS at a beginner-friendly level.
+- Storage access tiers: Explain Hot, Cool, Cold, and Archive, including their intended use cases and access-cost trade-offs.
+
+African example:
+Use a clinic storing patient documents, a photographer storing wedding videos, and a business archiving old financial records to explain different storage services and access tiers.
+
+Explain that Archive storage is intended for rarely accessed data and that retrieving archived data can take time.
+
+### 2.5 Identity, Access, and Security
+
+Explain:
+- Microsoft Entra ID: A cloud identity and access management service.
+- Authentication: Verifying who a user is.
+- Authorization: Determining what an authenticated user is allowed to do.
+- Multifactor authentication (MFA): Using additional verification factors to protect accounts.
+- Role-Based Access Control (RBAC): Assigning permissions according to a user's role.
+- Conditional Access: Applying access rules based on relevant signals and conditions.
+- Microsoft Defender for Cloud: Security posture management and workload protection capabilities.
+- Microsoft Entra Domain Services: Managed domain services for supported domain-dependent workloads.
+- The principle of least privilege.
+
+African example:
+Explain how a hospital can give doctors access to clinical records, accountants access to billing information, and receptionists access to appointment details without giving everyone the same permissions.
+
+## MODULE 3: AZURE MANAGEMENT AND GOVERNANCE
+
+Introduce Azure management and governance as the practices and tools used to control cloud spending, organize resources, enforce rules, deploy infrastructure, and monitor services.
+
+### 3.1 Cost Management
+
+Explain:
+- Azure Pricing Calculator: Estimates the cost of planned Azure services.
+- Azure Cost Management: Helps analyze and manage cloud spending.
+- Budgets and alerts: Help notify users when spending approaches defined thresholds.
+- Cost optimization: Identifying unnecessary resources and selecting suitable service sizes.
+- Consumption-based pricing: Paying according to the resources and services consumed.
+- The difference between pricing estimates and actual cloud charges.
+
+African example:
+A small Kenyan startup wants to estimate its monthly cloud bill before hosting its website and database.
+
+Explain how the startup can estimate costs, monitor spending, and receive budget alerts.
+
+### 3.2 Azure Governance and Compliance Tools
+
+Explain:
+- Azure Policy: Creates and evaluates rules that help ensure resources meet organizational requirements.
+- Resource locks: Help prevent accidental deletion or modification of protected resources.
+- Microsoft Purview: Provides data governance and related data management capabilities.
+- Microsoft Defender for Cloud: Helps assess security posture and identify security recommendations.
+- Management groups: Organize subscriptions for governance at scale.
+- Tags: Add metadata to resources for organization, reporting, and cost allocation.
+
+African example:
+A company wants to ensure its Azure resources follow approved configurations and that its finance department can identify cloud spending by department.
+
+Explain that governance helps organizations manage resources consistently, but does not automatically guarantee legal or regulatory compliance.
+
+### 3.3 Azure Resource Management and Deployment Tools
+
+Explain:
+- Azure Portal: A browser-based graphical interface for managing Azure resources.
+- Azure Cloud Shell: A browser-accessible shell with command-line tools for managing Azure.
+- Azure CLI: A command-line tool for creating and managing Azure resources.
+- Azure PowerShell: PowerShell commands for Azure administration.
+- Azure Resource Manager (ARM): The deployment and management layer for Azure resources.
+- ARM templates: JSON-based infrastructure-as-code templates for defining Azure deployments.
+- Bicep: A declarative language for deploying Azure resources using simpler syntax than ARM JSON templates.
+- Azure Arc: Helps manage supported resources across on-premises, multicloud, and Azure environments.
+
+African example:
+A beginner developer creates a virtual machine through the Azure Portal, then learns how to automate the same deployment using command-line tools or an infrastructure-as-code template.
+
+Clearly distinguish the Azure Portal, Azure CLI, Azure PowerShell, ARM templates, and Bicep.
+
+### 3.4 Azure Monitoring Tools
+
+Explain:
+- Azure Monitor: Collects and analyzes monitoring data from Azure resources and applications.
+- Azure Service Health: Provides information about Azure service issues, planned maintenance, and relevant health advisories.
+- Azure Advisor: Provides recommendations for improving reliability, security, performance, operational excellence, and cost.
+- Application Insights: Helps monitor application performance, requests, failures, and dependencies.
+- Log Analytics: Helps query and analyze collected log data.
+- Alerts: Notify users when defined conditions are met.
+- Metrics and logs: Explain the difference between numerical measurements over time and recorded event details.
+
+African example:
+A Kenyan online shop experiences slow page loading and occasional errors. Explain how monitoring tools can help the developer investigate the problem, receive alerts, and identify possible improvements.
+
+# 6. AI STUDY BUDDY
+
+Create a dedicated AI Study Buddy page where learners can ask questions about Azure concepts.
+
+The interface should include:
+- A chat-style conversation window.
+- A text input field.
+- A Send button.
+- Suggested beginner questions.
+- A Clear Chat button.
+- A way to request a simpler explanation.
+- A way to request a real-life African example.
+- A way to request a short revision summary.
+- A way to generate original practice questions.
+
+Suggested prompts:
+- "Explain cloud computing like I am completely new to IT."
+- "What is the difference between IaaS, PaaS, and SaaS?"
+- "Explain Azure Blob Storage using a Kenyan business example."
+- "What is the difference between Azure Monitor and Azure Service Health?"
+- "Explain Azure Policy using a school example."
+- "Teach me the difference between authentication and authorization."
+
+The AI should:
+1. Use simple English and avoid unnecessary jargon.
+2. Define technical terms before using them extensively.
+3. Use familiar examples from Kenya and other African contexts.
+4. Use analogies involving schools, hospitals, shops, farms, mobile money, transport, and everyday household activities.
+5. Offer an optional Swahili explanation when requested.
+6. Explain concepts step by step.
+7. Encourage learners to understand concepts instead of memorizing answers.
+8. Admit when it is uncertain rather than inventing technical facts.
+9. Keep explanations concise by default, with an option for more detail.
+10. Generate original questions rather than reproducing actual certification exam questions.
+
+The AI must base its AZ-900 learning scope on the publicly available Microsoft Learn AZ-900 study guide and its stated skills outline.
+
+Do not copy proprietary exam questions, use exam dumps, or imply access to actual Microsoft exam content.
+
+IMPORTANT IMPLEMENTATION REQUIREMENT:
+Do not create a chat interface that merely pretends to use AI.
+
+If a live AI integration is available, implement it through a secure backend or serverless function and store API credentials in environment variables or server-side secrets. Never expose private API keys in frontend code.
+
+If no AI service is configured, create a clearly labeled demo mode using predefined explanations and sample questions. Tell the user that the live AI assistant requires configuration.
+
+# 7. INTERACTIVE PRACTICE QUIZ
+
+Create a quiz page that allows learners to test their understanding of the three learning modules.
+
+Include:
+- Beginner-friendly multiple-choice questions.
+- Four answer options per question.
+- Immediate feedback after selecting an answer.
+- A short explanation of why the answer is correct.
+- A progress indicator.
+- A final score.
+- A review of incorrect answers.
+- A Restart Quiz button.
+- Topic-based quizzes.
+- A mixed quiz covering all three modules.
+
+Generate original questions based on the public AZ-900 skills outline.
+
+Do not copy real Microsoft certification exam questions or reproduce exam dumps.
+
+Example original question:
+
+"Which Azure service would be most suitable for storing a large collection of photographs and videos?"
+
+A. Azure Blob Storage
+B. Azure Virtual Network
+C. Azure Policy
+D. Azure VPN Gateway
+
+Correct answer: A. Azure Blob Storage.
+
+Explanation: Blob Storage is designed for storing unstructured data, including images and videos.
+
+Include a disclaimer that practice questions are educational exercises and do not guarantee success in the official certification exam.
+
+# 8. LEARNING DASHBOARD AND PROGRESS TRACKING
+
+Create a learner dashboard showing:
+- A welcome message.
+- Three learning module cards.
+- The percentage of topics completed in each module.
+- The number of quizzes completed.
+- The learner's latest quiz score.
+- Suggested next topics.
+- A Continue Learning button.
+- A daily study goal.
+- A simple revision checklist.
+
+Allow learners to mark topics as completed.
+
+For the initial version, store learning progress in browser local storage so that it remains available after refreshing the page on the same browser.
+
+Do not require account creation for the basic learning experience.
+
+If authentication is added later, make it optional.
+
+# 9. AFRICAN LEARNING EXPERIENCE
+
+Make African examples a core feature of the platform rather than an afterthought.
+
+Include examples from:
+- Kenyan schools and universities.
+- Local clinics and hospitals.
+- Small businesses and online shops.
+- Agriculture and farming.
+- Mobile money and digital payments.
+- Transport and logistics.
+- Community organizations.
+- Household budgeting and storage.
+
+Use Kenya Shillings (KES) when a monetary example is helpful.
+
+Allow the learner to choose between:
+- Simple English.
+- English with African real-life examples.
+- Swahili explanations.
+
+Do not assume that every African learner speaks Swahili. English should remain the default language.
+
+When using Swahili, prefer clear, natural, accessible language rather than overly formal translations.
+
+# 10. WEBSITE DESIGN AND USER EXPERIENCE
+
+Create a professional, modern, welcoming, and responsive design.
+
+Design direction:
+- Use a clean educational dashboard layout.
+- Use a cloud-inspired visual identity.
+- Use a calm blue, teal, and neutral color palette.
+- Use accessible contrast and readable typography.
+- Use rounded cards, subtle shadows, and simple icons.
+- Use clear progress bars and visual learning indicators.
+- Include a mobile-friendly navigation menu.
+- Make the interface work on desktops, tablets, and smartphones.
+- Use small animations only where they improve the experience.
+- Avoid clutter and unnecessary visual effects.
+
+Do not use Microsoft logos, copyrighted certification badges, or designs that suggest this is an official Microsoft product.
+
+Use original cloud-inspired icons and illustrations.
+
+Include the following disclaimer in the footer:
+
+"WinguStudy AI is an independent educational project created to support Azure Fundamentals learning. It is not affiliated with, endorsed by, or sponsored by Microsoft. Azure and related product names are trademarks of their respective owners. Learning content is based on publicly available Microsoft Learn materials and original educational explanations."
+
+# 11. HOME PAGE STRUCTURE
+
+Create a compelling home page with:
+
+**Hero heading:**
+"Cloud Computing, Made Simple."
+
+**Supporting text:**
+"Your AI-powered Azure study buddy. Learn cloud concepts through simple explanations, familiar African examples, and interactive practice."
+
+Primary button: "Start Learning"
+
+Secondary button: "Ask the AI Study Buddy"
+
+Below the hero, display:
+- A section explaining the problem the platform solves.
+- Three cards for Cloud Concepts, Azure Architecture and Services, and Azure Management and Governance.
+- A section explaining how the AI Study Buddy works.
+- A section highlighting African real-life examples.
+- A section showing the quiz and progress-tracking features.
+- A brief statement explaining that the project was inspired by the challenges beginners face when learning cloud computing.
+
+# 12. TECHNICAL REQUIREMENTS
+
+Use a modern frontend stack supported by Lovable.
+
+Preferred technologies:
+- React.
+- TypeScript.
+- Tailwind CSS.
+- Reusable UI components.
+- Lucide icons or another consistent open-source icon library.
+
+Requirements:
+- Build reusable components for topic cards, quiz questions, progress indicators, and chat messages.
+- Organize the code into clear components and pages.
+- Ensure all navigation links work.
+- Ensure all buttons have meaningful functionality.
+- Make the website responsive.
+- Add accessible labels to form inputs.
+- Include sensible loading, empty, and error states.
+- Avoid unnecessary dependencies.
+- Do not expose secrets or private API keys.
+- Keep the implementation manageable for a beginner software engineering student.
+
+Use browser local storage for initial progress tracking and quiz history.
+
+If persistent cloud storage or user authentication is required in a later version, propose a suitable backend rather than pretending that local storage provides cross-device synchronization.
+
+# 13. CONTENT ACCURACY
+
+Use the public Microsoft Learn AZ-900 study guide as the reference for the learning scope.
+
+Organize the material around these three broad areas:
+1. Cloud concepts.
+2. Azure architecture and services.
+3. Azure management and governance.
+
+Keep explanations beginner-friendly, but technically accurate.
+
+Where Azure service capabilities or exam objectives may change, make it possible to update the learning content without rebuilding the entire website.
+
+Do not claim that the website contains every possible exam topic unless this has been verified against the current study guide.
+
+Clearly distinguish educational analogies from actual Azure technical functionality.
+
+# 14. HACKATHON MVP PRIORITIES
+
+Prioritize a functional minimum viable product rather than building too many advanced features at once.
+
+Implement these features first:
+
+1. A polished home page.
+2. Three learning modules with all the requested subtopics and brief descriptions.
+3. A working topic-navigation system.
+4. An interactive AI Study Buddy with a clearly labeled demo mode if live AI is not configured.
+5. A functional original-question practice quiz with feedback and scoring.
+6. A learner dashboard with locally stored progress.
+7. A responsive mobile-friendly design.
+8. A clear unofficial educational-tool disclaimer.
+
+Make the application usable from the first launch.
+
+Do not leave major sections as empty placeholders.
+
+If a feature depends on an external service or API, explain the setup requirement clearly.
+
+# 15. FINAL INSTRUCTION
+
+Build the actual website, not just a design mockup.
+
+Start with the complete responsive interface and functional learning modules. Then implement the quiz, progress tracking, and AI Study Buddy.
+
+Keep the code simple enough for a beginner software engineering student to understand, demonstrate, and explain to hackathon judges.
+
+The final result should demonstrate how AI and relatable real-world examples can make cloud computing education more accessible to beginners.
